@@ -20,7 +20,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
  * @version 1
  * @since 2023/10/25 09:38
  */
-@Suppress("MemberVisibilityCanBePrivate")
 object ReplyContexts : LongIdTable("context") {
     val value = jsonb<ReplyContext>("value", Json)
 
@@ -29,7 +28,7 @@ object ReplyContexts : LongIdTable("context") {
     val size: Int
         get() = cached.size
 
-    operator fun get(contextId: EntityID<Long>): ReplyContext? = cached[contextId]
+    operator fun get(contextId: EntityID<Long>?): ReplyContext? = if (contextId != null) cached[contextId] else null
 
     fun match(context: ReplyContext): EntityID<Long>? =
         cached.entries.find { it.value.match(context) }?.key

@@ -24,7 +24,6 @@ import org.jetbrains.exposed.sql.update
  * @version 1
  * @since 2023/10/25 09:17
  */
-@Suppress("MemberVisibilityCanBePrivate")
 object ReplyDefines : LongIdTable("define") {
     val trigger = jsonb<ReplyTrigger>("trigger", Json).uniqueIndex()
     val context = reference("context_id", ReplyContexts)
@@ -39,6 +38,8 @@ object ReplyDefines : LongIdTable("define") {
         indexes.entries.find { (_, trigger) -> trigger.test(message) }
 
     fun getContextId(triggerId: EntityID<Long>): EntityID<Long>? = contexts[triggerId]
+
+    fun getContext(triggerId: EntityID<Long>): ReplyContext? = getContextId(triggerId)?.let(ReplyContexts::get)
 
     fun build() {
         indexes.clear()
@@ -63,6 +64,7 @@ object ReplyDefines : LongIdTable("define") {
                 update({ ReplyDefines.id eq triggerId }) {
                     it[ReplyDefines.context] = contextId
                 }
+                contexts[triggerId] = contextId
             } else {
                 val newId = insertAndGetId {
                     it[ReplyDefines.trigger] = trigger
@@ -72,6 +74,9 @@ object ReplyDefines : LongIdTable("define") {
                 contexts[newId] = contextId
             }
         }
+        Reply.logger.info("自动回复已更新:")
+        Reply.logger.info(trigger.toString())
+        Reply.logger.info(context.toString())
     }
 
     suspend fun handle(event: MessageEvent) {

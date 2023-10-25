@@ -1,8 +1,8 @@
 package me.parrot
 
-import me.parrot.command.CommandHandler
-import me.parrot.data.context.ChainContext
-import me.parrot.data.trigger.ReplyTrigger
+import me.parrot.command.ReplyCommand
+import me.parrot.data.action.ScheduledAction
+import me.parrot.function.responsive
 import me.parrot.storage.ReplyContexts
 import me.parrot.storage.ReplyDefines
 import net.mamoe.mirai.console.command.CommandManager
@@ -11,7 +11,6 @@ import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.event.EventPriority
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.event.globalEventChannel
-import net.mamoe.mirai.message.data.MessageSource.Key.quote
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -24,15 +23,15 @@ object Reply : KotlinPlugin(
     }
 ) {
 
-    private val scheduled: MutableMap<Long, ReplyTrigger> = mutableMapOf()
+    private val scheduled: MutableMap<Long, ScheduledAction> = mutableMapOf()
 
     lateinit var db: Database
         private set
 
     override fun onEnable() {
-        CommandManager.registerCommand(CommandHandler)
+        CommandManager.registerCommand(ReplyCommand)
+
         val file = File(dataFolder, "data")
-        // Database in file, needs full path or relative path starting with ./
         db = Database.connect("jdbc:h2:${file.absolutePath}", "org.h2.Driver")
         transaction(db) {
             SchemaUtils.create(ReplyContexts, ReplyDefines)
@@ -41,20 +40,15 @@ object Reply : KotlinPlugin(
         ReplyDefines.build()
 
         globalEventChannel().subscribeAlways<MessageEvent>(priority = EventPriority.MONITOR) listen@{
-            val trigger = scheduled.remove(sender.id) ?: return@listen ReplyDefines.handle(it)
-            val chain = ChainContext.of(message)
-            if (chain.isNullOrEmpty()) {
-                subject.sendMessage(message.quote() + "无法解析此内容, 本次编辑已取消")
-                return@listen
+            val action = scheduled.remove(sender.id) ?: return@listen ReplyDefines.handle(it)
+            responsive {
+                action.execute(it)
             }
-            val context = if (chain.size == 1) chain.first() else chain
-            ReplyDefines.upload(trigger, context)
-            subject.sendMessage(message.quote() + "已设置自动回复")
         }
     }
 
-    fun schedule(userId: Long, trigger: ReplyTrigger) {
-        scheduled[userId] = trigger
+    fun schedule(userId: Long, action: ScheduledAction) {
+        scheduled[userId] = action
     }
 
     fun cancel(userId: Long): Boolean = scheduled.remove(userId) != null

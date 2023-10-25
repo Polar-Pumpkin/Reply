@@ -3,6 +3,7 @@ package me.parrot.data.context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import me.parrot.Reply
 import me.parrot.algorithm.dhash.DHash
 import me.parrot.function.zip
 import net.mamoe.mirai.contact.Contact
@@ -29,16 +30,21 @@ data class ImageRemoteContext(
 ) : ImageContext {
 
     suspend fun download(): ImageLocalContext {
+        Reply.logger.info("准备下载图片:")
+        Reply.logger.info(url)
+        val isZipped: Boolean
         val bytes = withContext(Dispatchers.IO) { URL(url).openConnection() }.run {
             addRequestProperty(
                 "user-agent",
-                "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
             )
+
             withContext(Dispatchers.IO) { getInputStream() }.run {
-                if (contentEncoding == "gzip") GZIPInputStream(this) else this
-            }.readBytes()
+                isZipped = contentEncoding == "gzip"
+                if (isZipped) GZIPInputStream(this) else this
+            }.use { it.readBytes() }
         }
-        val data = Base64.getEncoder().encodeToString(bytes.zip())
+        val data = Base64.getEncoder().encodeToString(if (isZipped) bytes else bytes.zip())
         val image = withContext(Dispatchers.IO) {
             ImageIO.read(ByteArrayInputStream(bytes))
         }
