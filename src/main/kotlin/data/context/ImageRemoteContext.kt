@@ -48,7 +48,7 @@ data class ImageRemoteContext(
         val image = withContext(Dispatchers.IO) {
             ImageIO.read(ByteArrayInputStream(bytes))
         }
-        val hash = DHash.compute(image).toString()
+        val hash = String(DHash.compute(image))
         return ImageLocalContext(this, data, hash)
     }
 
