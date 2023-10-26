@@ -40,9 +40,8 @@ object Reply : KotlinPlugin(
         ReplyDefines.build()
 
         globalEventChannel().subscribeAlways<MessageEvent>(priority = EventPriority.MONITOR) listen@{
-            val action = scheduled.remove(sender.id) ?: return@listen ReplyDefines.handle(it)
             responsive {
-                action.execute(it)
+                scheduled.remove(sender.id)?.execute(it) ?: return@listen ReplyDefines.handle(it)
             }
         }
     }
