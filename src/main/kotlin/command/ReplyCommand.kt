@@ -30,7 +30,7 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
     }
 
     @SubCommand
-    suspend fun UserCommandSender.list(page: Int = 1) {
+    suspend fun UserCommandSender.list(page: Int) {
         val size = 10
         val amount = ReplyDefines.size
         val total = (amount / size.toDouble()).roundToInt()
@@ -54,7 +54,7 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
     }
 
     @SubCommand
-    suspend fun UserCommandSender.edit(force: Boolean = false) {
+    suspend fun UserCommandSender.edit(force: Boolean) {
         Reply.schedule(user.id, EditAction(null, force))
         sendMessage("请发送自动回复触发器")
     }

@@ -90,6 +90,8 @@ object ReplyDefines : LongIdTable("define") {
     }
 
     fun delete(triggerId: EntityID<Long>): Boolean {
+        indexes.remove(triggerId)
+        contexts.remove(triggerId)
         return transaction(Reply.db) {
             deleteWhere { ReplyDefines.id eq triggerId } > 0
         }
