@@ -48,7 +48,7 @@ data class ImageLocalContext(
         if (context !is ImageContext) return false
         if (context.imageId == imageId || context.md5 == md5) return true
         if (context !is ImageLocalContext) return false
-        return DHash.diff(hash, context.hash) <= 25
+        return DHash.diff(hash, context.hash) < 10
     }
 
 }

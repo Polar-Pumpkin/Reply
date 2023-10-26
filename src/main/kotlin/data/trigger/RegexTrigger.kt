@@ -20,6 +20,9 @@ data class RegexTrigger(
     val ignoreSpace: Boolean = false
 ) : ReplyTrigger {
 
+    override val text: String
+        get() = pattern
+
     @Transient
     private val regex = Regex(pattern, buildSet {
         if (ignoreCase) {

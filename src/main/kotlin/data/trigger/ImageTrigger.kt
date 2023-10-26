@@ -24,6 +24,9 @@ data class ImageTrigger(val index: Long) : ReplyTrigger {
     constructor(reference: ImageReferenceContext) : this(reference.index)
 
     @Transient
+    override val text: String = "(图片)"
+
+    @Transient
     private val ref = ReplyContexts[EntityID(index, ReplyContexts)] as ImageLocalContext
 
     override suspend fun test(message: MessageChain): Boolean {

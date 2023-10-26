@@ -49,16 +49,22 @@ sealed interface ImageContext : ReplyContext {
             )
         }
 
-        suspend fun wrap(image: Image): ImageReferenceContext {
+        suspend fun wrap(image: Image, force: Boolean = false): ImageReferenceContext {
             val remote = remote(image)
             val exist = ReplyContexts.matchIsInstance<ImageLocalContext>(remote)
             if (exist != null) {
+                if (force) {
+                    return ImageReferenceContext(ReplyContexts.upload(remote.download(), true))
+                }
                 return ImageReferenceContext(exist)
             }
 
             val local = remote.download()
             val similar = ReplyContexts.matchIsInstance<ImageLocalContext>(local)
             if (similar != null) {
+                if (force) {
+                    return ImageReferenceContext(ReplyContexts.upload(local, true))
+                }
                 return ImageReferenceContext(similar)
             }
             return ImageReferenceContext(ReplyContexts.upload(local))

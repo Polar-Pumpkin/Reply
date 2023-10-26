@@ -9,11 +9,14 @@ import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.utils.info
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.json.jsonb
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import java.util.stream.Collectors
 
 /**
  * Reply
@@ -41,6 +44,13 @@ object ReplyDefines : LongIdTable("define") {
 
     fun getContext(triggerId: EntityID<Long>): ReplyContext? = getContextId(triggerId)?.let(ReplyContexts::get)
 
+    fun getPage(page: Int = 1, size: Int = 10): List<ReplyTrigger> {
+        return indexes.values.stream()
+            .skip(((page - 1) * size).toLong())
+            .limit(size.toLong())
+            .collect(Collectors.toList())
+    }
+
     fun build() {
         indexes.clear()
         contexts.clear()
@@ -56,8 +66,8 @@ object ReplyDefines : LongIdTable("define") {
         Reply.logger.info { "已加载 $size 条自动回复" }
     }
 
-    fun upload(trigger: ReplyTrigger, context: ReplyContext) {
-        val contextId = ReplyContexts.upload(context)
+    fun upload(trigger: ReplyTrigger, context: ReplyContext, force: Boolean = false) {
+        val contextId = ReplyContexts.upload(context, force)
         val triggerId = indexes.entries.find { it.value == trigger }?.key
         transaction(Reply.db) {
             if (triggerId != null) {
@@ -77,6 +87,12 @@ object ReplyDefines : LongIdTable("define") {
         Reply.logger.info("自动回复已更新:")
         Reply.logger.info(trigger.toString())
         Reply.logger.info(context.toString())
+    }
+
+    fun delete(triggerId: EntityID<Long>): Boolean {
+        return transaction(Reply.db) {
+            deleteWhere { ReplyDefines.id eq triggerId } > 0
+        }
     }
 
     suspend fun handle(event: MessageEvent) {

@@ -17,7 +17,7 @@ import net.mamoe.mirai.message.data.messageChainOf
  * @version 1
  * @since 2023/10/25 23:39
  */
-data class EditAction(val trigger: ReplyTrigger?) : ScheduledAction {
+data class EditAction(val trigger: ReplyTrigger?, val force: Boolean) : ScheduledAction {
 
     override suspend fun execute(event: MessageEvent) {
         if (trigger == null) event.createTrigger() else event.createContext()
@@ -30,16 +30,16 @@ data class EditAction(val trigger: ReplyTrigger?) : ScheduledAction {
             +"旧内容如下, 请发送新的内容:\n"
             +(context?.show(subject) ?: messageChainOf(PlainText("(无效)")))
         }
-        Reply.schedule(sender.id, EditAction(trigger))
+        Reply.schedule(sender.id, EditAction(trigger, force))
     }
 
     private suspend fun MessageEvent.createContext() {
         checkNotNull(trigger)
-        val chain = ChainContext.of(message)
+        val chain = ChainContext.of(message, force)
         if (chain.isNullOrEmpty()) {
             return subject.replyMessage(message, "无法解析此内容")
         }
-        ReplyDefines.upload(trigger, if (chain.size == 1) chain.first() else chain)
+        ReplyDefines.upload(trigger, if (chain.size == 1) chain.first() else chain, force)
         subject.replyMessage(message, "已保存自动回复")
     }
 

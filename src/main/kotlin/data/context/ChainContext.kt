@@ -32,13 +32,13 @@ data class ChainContext(val chain: List<ReplyContext>) : ReplyContext, List<Repl
     }
 
     companion object {
-        suspend fun of(chain: MessageChain): ChainContext? {
+        suspend fun of(chain: MessageChain, force: Boolean = false): ChainContext? {
             return ChainContext(buildList {
                 chain.filterIsInstance<MessageContent>().forEach { message ->
                     this += when (message) {
                         is UnsupportedMessage -> return@forEach
                         is PlainText -> TextContext(message.content)
-                        is Image -> ImageContext.wrap(message)
+                        is Image -> ImageContext.wrap(message, force)
                         else -> return null
                     }
                 }

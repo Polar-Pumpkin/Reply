@@ -17,6 +17,7 @@ import net.mamoe.mirai.message.data.MessageChain
  */
 @Serializable
 sealed interface ReplyTrigger {
+    val text: String
     suspend fun test(message: MessageChain): Boolean
     suspend fun test(event: MessageEvent): Boolean = test(event.message)
 

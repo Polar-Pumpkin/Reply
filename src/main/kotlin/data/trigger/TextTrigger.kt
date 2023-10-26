@@ -14,7 +14,7 @@ import net.mamoe.mirai.message.data.content
  */
 @Serializable
 data class TextTrigger(
-    val text: String,
+    override val text: String,
     val mode: Mode = Mode.EQUAL,
     val ignoreCase: Boolean = false,
     val ignoreSpace: Boolean = false

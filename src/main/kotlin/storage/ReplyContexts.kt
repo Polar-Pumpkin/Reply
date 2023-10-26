@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.json.jsonb
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 /**
  * Reply
@@ -47,10 +48,20 @@ object ReplyContexts : LongIdTable("context") {
         Reply.logger.info { "已加载 $size 项自动回复内容" }
     }
 
-    fun upload(context: ReplyContext): EntityID<Long> {
-        return match(context) ?: transaction(Reply.db) {
-            insertAndGetId { it[value] = context }
-                .also { cached[it] = context }
+    fun upload(context: ReplyContext, force: Boolean = false): EntityID<Long> {
+        val contextId = match(context)
+        return if (contextId != null) {
+            if (force) {
+                transaction(Reply.db) {
+                    update({ ReplyContexts.id eq contextId }) { it[value] = context }
+                }
+            }
+            contextId
+        } else {
+            transaction(Reply.db) {
+                insertAndGetId { it[value] = context }
+                    .also { cached[it] = context }
+            }
         }
     }
 }
