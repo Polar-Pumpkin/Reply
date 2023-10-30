@@ -1,9 +1,23 @@
 package me.parrot.mirai.data.binary
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import me.parrot.mirai.Reply.logger
+import me.parrot.mirai.algorithm.DHash
+import me.parrot.mirai.data.model.BinaryResource
+import me.parrot.mirai.function.base64
+import me.parrot.mirai.function.compress
+import me.parrot.mirai.manager.Caches
 import net.mamoe.mirai.message.data.Image
+import net.mamoe.mirai.message.data.Image.Key.queryUrl
 import net.mamoe.mirai.message.data.ImageType
-import java.util.*
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
+import java.io.ByteArrayInputStream
+import java.net.URL
+import java.util.function.Predicate
+import java.util.zip.GZIPInputStream
+import javax.imageio.ImageIO
 
 /**
  * Reply
@@ -23,16 +37,86 @@ data class ImageMetadata(
     val isEmoji: Boolean,
     val md5: String,
     val hash: String
-) {
+) : BinaryMetadata {
+
+    fun isSameImage(image: Image): Boolean {
+        return image.imageId == imageId || base64(image.md5) == md5
+    }
+
+    fun isSimilar(meta: ImageMetadata): Boolean {
+        return meta.imageId == imageId || meta.md5 == md5 || DHash.diff(hash, meta.hash) <= 10
+    }
+
+    suspend fun isSimilar(image: Image): Boolean {
+        return isSameImage(image) || isSimilar(download(image).second)
+    }
+
     companion object {
-        fun of(image: Image, hash: String): ImageMetadata {
+
+        private val cached: MutableMap<String, Pair<ByteArray, ImageMetadata>> = mutableMapOf()
+
+        private val userAgent = listOf(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+            "AppleWebKit/537.36 (KHTML, like Gecko)",
+            "Chrome/118.0.0.0",
+            "Safari/537.36"
+        ).joinToString(" ")
+
+        suspend fun find(image: Image): BinaryResource? {
+            val cache = cached[image.imageId]
+                ?.let { (_, meta) -> Predicate<ImageMetadata> { it.isSimilar(meta) } }
+                ?: Predicate<ImageMetadata> { it.isSameImage(image) }
+            Caches.getBinaries().values
+                .asSequence()
+                .filter { it.metadata is ImageMetadata }
+                .find { cache.test(it.metadata as ImageMetadata) }
+                ?.let { return it }
+            val (_, meta) = download(image)
+            return Caches.getBinaries().values
+                .asSequence()
+                .filter { it.metadata is ImageMetadata }
+                .find { (it.metadata as ImageMetadata).isSimilar(meta) }
+        }
+
+        suspend fun download(image: Image, cache: Boolean = true): Pair<ByteArray, ImageMetadata> {
+            if (cache) {
+                cached[image.imageId]?.let { return it }
+            }
+            val url = image.queryUrl()
+            logger.info("准备下载图片:")
+            logger.info(url)
+            val connection = withContext(Dispatchers.IO) { URL(url).openConnection() }
+            connection.addRequestProperty("user-agent", userAgent)
+
+            val isZipped = connection.contentEncoding == "gzip"
+            val raw = withContext(Dispatchers.IO) {
+                connection.getInputStream().let { if (isZipped) GZIPInputStream(it) else it }.readBytes()
+            }
+            val img = withContext(Dispatchers.IO) { ImageIO.read(ByteArrayInputStream(raw)) }
+            val hash = String(DHash.compute(img))
+
+            val meta = of(image, hash)
+            val bytes = raw.compress()
+            val packet = bytes to meta
+            cached[image.imageId] = packet
+            return packet
+        }
+
+        suspend fun upload(image: Image): BinaryResource {
+            val (bytes, meta) = download(image)
+            return Caches.newBinary(ExposedBlob(bytes), meta)
+        }
+
+        private fun of(image: Image, hash: String): ImageMetadata {
             return with(image) {
                 ImageMetadata(
                     imageId, imageType,
                     size, width, height, isEmoji,
-                    Base64.getEncoder().encodeToString(md5), hash
+                    base64(md5), hash
                 )
             }
         }
+
     }
+
 }

@@ -2,13 +2,11 @@ package me.parrot.mirai.data.trigger
 
 import kotlinx.serialization.Serializable
 import me.parrot.mirai.data.Demand
-import me.parrot.mirai.data.trigger.option.InstanceExclusiveOption
-import me.parrot.mirai.data.trigger.option.InstanceSingletonOption
-import me.parrot.mirai.registry.TriggerOptions
+import me.parrot.mirai.internal.function.createDefaultOptions
+import me.parrot.mirai.internal.function.parseOptions
+import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.MessageContent
 import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.UnsupportedMessage
 
 /**
  * Reply
@@ -38,38 +36,25 @@ data class TextTrigger(
 
     companion object : ReplyTriggerParser<PlainText> {
 
-        override val target: Class<PlainText>
-            get() = PlainText::class.java
-
-        override val name: String = "text"
+        override val uniqueId: String = "text"
 
         override val arguments: Map<String, List<String>> = mapOf(
             "text" to listOf("匹配内容"),
             "mode" to Mode.values().map { "${it.name} ${it.description}" },
-            "ignoreCase" to listOf("忽略大小写")
+            "ignoreCase" to listOf("是否忽略大小写")
         )
 
-        override fun parse(demand: Demand): TextTrigger {
+        context(MessageEvent)
+        override suspend fun parse(demand: Demand): TextTrigger {
             val (text, mode, ignoreCase) = demand.positions
-            return TextTrigger(text, Mode.valueOf(mode.uppercase()), ignoreCase.toBooleanStrict()).apply {
-                TriggerOptions.parse(TextTrigger::class.java, demand)
-                    .forEach { addOption(it) }
-            }
+            return TextTrigger(text, Mode.valueOf(mode.uppercase()), ignoreCase.toBooleanStrict())
+                .parseOptions(demand)
         }
 
-        override fun createDefault(message: PlainText, origin: MessageChain): TextTrigger {
-            return TextTrigger(message.content).apply {
-                val content = origin
-                    .filterIsInstance<MessageContent>()
-                    .filter { it !is UnsupportedMessage }
-                val instance = content.filterIsInstance<PlainText>()
-                if (instance.size == 1) {
-                    addOption(InstanceSingletonOption)
-                }
-                if (instance.size == content.size) {
-                    addOption(InstanceExclusiveOption)
-                }
-            }
+        context(MessageEvent)
+        override suspend fun createDefault(message: PlainText, origin: MessageChain): TextTrigger {
+            return TextTrigger(message.content)
+                .createDefaultOptions(message, origin)
         }
 
     }

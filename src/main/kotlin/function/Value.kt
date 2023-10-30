@@ -1,6 +1,7 @@
 package me.parrot.mirai.function
 
 import me.parrot.mirai.data.trigger.option.TriggerOption
+import java.util.*
 
 /**
  * Reply
@@ -13,3 +14,5 @@ import me.parrot.mirai.data.trigger.option.TriggerOption
 fun <T : TriggerOption> optionId(clazz: Class<T>): String = clazz.simpleName.substringBefore("Option")
 
 inline fun <reified T : TriggerOption> optionId(): String = optionId(T::class.java)
+
+fun base64(bytes: ByteArray): String = Base64.getEncoder().encodeToString(bytes)

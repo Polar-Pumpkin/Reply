@@ -1,8 +1,7 @@
 package me.parrot.mirai.registry
 
-import me.parrot.mirai.data.trigger.ReplyTriggerParser
+import me.parrot.mirai.data.trigger.*
 import me.parrot.mirai.internal.container.Registry
-import net.mamoe.mirai.message.data.Message
 
 /**
  * Reply
@@ -12,4 +11,13 @@ import net.mamoe.mirai.message.data.Message
  * @version 1
  * @since 2023/10/30 11:28
  */
-object Triggers : Registry<Class<out Message>, ReplyTriggerParser<*>>()
+object Triggers : Registry<String, ReplyTriggerParser<*>>() {
+
+    init {
+        register(AtTrigger)
+        register(TextTrigger)
+        register(ImageTrigger)
+        register(IntervalTrigger)
+    }
+
+}
