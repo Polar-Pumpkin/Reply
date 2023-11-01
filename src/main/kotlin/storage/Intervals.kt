@@ -3,7 +3,6 @@ package me.parrot.mirai.storage
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import me.parrot.mirai.Reply
 import net.mamoe.mirai.event.events.GroupAwareMessageEvent
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.and
@@ -35,7 +34,7 @@ object Intervals : LongIdTable("interval") {
     }
 
     fun days(event: GroupAwareMessageEvent, update: Boolean = true): Duration {
-        return transaction(Reply.db) {
+        return transaction {
             val row = slice(lastMessage)
                 .select { (userId eq event.sender.id) and (subjectId eq event.group.id) }
                 .firstOrNull()

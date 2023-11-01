@@ -6,12 +6,12 @@ import me.parrot.mirai.data.binary.ImageMetadata
 import me.parrot.mirai.data.model.BinaryResource
 import me.parrot.mirai.internal.function.createDefaultOptions
 import me.parrot.mirai.internal.function.parseOptions
-import me.parrot.mirai.manager.Caches
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.getValue
+import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
  * Reply
@@ -25,7 +25,9 @@ import net.mamoe.mirai.message.data.getValue
 data class ImageTrigger(val binaryId: Long) : ReplyTrigger<Image>() {
 
     private val resource: BinaryResource
-        get() = Caches.getBinary(binaryId)
+        get() = transaction {
+            requireNotNull(BinaryResource.findById(binaryId)) { "Invalid binary id: $binaryId" }
+        }
 
     override suspend fun test(message: Image): Boolean {
         return (resource.metadata as? ImageMetadata)?.isSimilar(message) ?: return false

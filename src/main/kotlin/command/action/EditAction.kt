@@ -1,6 +1,5 @@
 package me.parrot.mirai.command.action
 
-import me.parrot.mirai.Reply
 import me.parrot.mirai.data.content.Content
 import me.parrot.mirai.data.model.Response
 import me.parrot.mirai.function.reply
@@ -24,7 +23,7 @@ class EditAction(val response: Response) : CommandAction {
 
     override suspend fun run(event: MessageEvent) {
         val content = Content.wrap(event.message, event.sender)
-        transaction(Reply.db) {
+        transaction {
             response.content = content
             response.flush()
         }

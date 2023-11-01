@@ -1,6 +1,5 @@
 package me.parrot.mirai.command.action
 
-import me.parrot.mirai.Reply
 import me.parrot.mirai.data.content.Content
 import me.parrot.mirai.data.content.MultipleContent
 import me.parrot.mirai.data.model.Response
@@ -24,9 +23,9 @@ class AppendAction(val response: Response) : CommandAction {
     }
 
     override suspend fun run(event: MessageEvent) {
-        val content = response.content
         val created = Content.wrap(event.message, event.sender)
-        transaction(Reply.db) {
+        transaction {
+            val content = response.content
             response.content = if (content is MultipleContent) {
                 content.apply {
                     contents += created

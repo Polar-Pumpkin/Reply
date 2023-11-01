@@ -5,15 +5,16 @@ import me.parrot.mirai.data.trigger.ReplyTrigger
 import me.parrot.mirai.data.trigger.option.InstanceExclusiveOption
 import me.parrot.mirai.data.trigger.option.InstanceSingletonOption
 import me.parrot.mirai.data.trigger.option.LimitGroupOption
+import me.parrot.mirai.function.reply
 import me.parrot.mirai.registry.TriggerOptions
+import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
 import net.mamoe.mirai.console.permission.PermissionService.Companion.hasPermission
 import net.mamoe.mirai.event.events.GroupAwareMessageEvent
 import net.mamoe.mirai.event.events.MessageEvent
-import net.mamoe.mirai.message.data.Message
-import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.MessageContent
-import net.mamoe.mirai.message.data.UnsupportedMessage
+import net.mamoe.mirai.message.data.*
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 /**
  * Reply
@@ -48,4 +49,19 @@ internal fun <T : Message, E : ReplyTrigger<T>> E.createDefaultOptions(origin: M
         addOption(LimitGroupOption(setOf(event.group.id)))
     }
     return this
+}
+
+context(CommandSender)
+internal suspend fun <E> Collection<E>.onPage(page: Int, size: Long = 10L, action: MessageChainBuilder.(E) -> Unit) {
+    val pages = ceil(this.size / size.toDouble()).roundToInt()
+    if (page > pages) {
+        return reply { +"未找到第 $page 页, 共 $pages 页" }
+    }
+    reply {
+        +"第 $page 页 / 共 $pages 页\n"
+        this@onPage.stream()
+            .skip((page - 1) * size)
+            .limit(size)
+            .forEach { action(it) }
+    }
 }

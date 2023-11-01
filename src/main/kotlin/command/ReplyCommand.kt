@@ -1,24 +1,29 @@
 package me.parrot.mirai.command
 
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import me.parrot.mirai.Reply
 import me.parrot.mirai.command.action.AppendAction
 import me.parrot.mirai.command.action.CreateAction
 import me.parrot.mirai.command.action.DefineAction
 import me.parrot.mirai.command.action.EditAction
 import me.parrot.mirai.data.model.Link
-import me.parrot.mirai.function.maxPage
-import me.parrot.mirai.function.page
+import me.parrot.mirai.data.model.Response
 import me.parrot.mirai.function.reply
+import me.parrot.mirai.internal.function.onPage
 import me.parrot.mirai.manager.Actions
-import me.parrot.mirai.manager.Caches
 import me.parrot.mirai.manager.Histories
 import me.parrot.mirai.registry.TriggerOptions
 import me.parrot.mirai.registry.Triggers
+import me.parrot.mirai.storage.Links
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CommandSenderOnMessage
 import net.mamoe.mirai.console.command.CompositeCommand
 import net.mamoe.mirai.console.command.UserCommandSender
 import net.mamoe.mirai.contact.User
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 /**
  * Reply
@@ -31,11 +36,6 @@ import net.mamoe.mirai.contact.User
 object ReplyCommand : CompositeCommand(Reply, "reply") {
 
     // reload
-    @SubCommand
-    suspend fun CommandSender.reload() {
-        Caches.build()
-        reply { +"重载完成" }
-    }
 
     // help
     @SubCommand
@@ -70,15 +70,9 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
 
     // list
     @SubCommand
-    suspend fun CommandSender.list(page: Int) {
-        val size = 10L
-        val pages = Caches.getResponses().values.maxPage(size)
-        if (page > pages) {
-            return reply { +"未找到第 $page 页, 共 $pages 页" }
-        }
-        reply {
-            +"第 $page 页 / 共 $pages 页\n"
-            Caches.getResponses().values.page(page, size) {
+    suspend fun CommandSender.list(page: Int, size: Long = 10) {
+        newSuspendedTransaction {
+            Response.all().toList().onPage(page, size) {
                 +"#${it.id.value} ${it.trigger}\n"
             }
         }
@@ -95,18 +89,23 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
     // info
     @SubCommand
     suspend fun CommandSenderOnMessage<*>.info(responseId: Long) {
-        val response = Caches.getResponseOrNull(responseId) ?: return reply { +"未找到自动回复 #$responseId" }
-        reply { response.append(fromEvent) }
+        newSuspendedTransaction {
+            response(responseId)?.let {
+                reply { it.append(fromEvent) }
+            }
+        }
     }
 
     // last
     @SubCommand
     suspend fun CommandSenderOnMessage<*>.last(user: User = fromEvent.sender) {
         val history = Histories[user.id] ?: return reply { +"未找到最近一次自动回复" }
-        reply {
-            history.responses.forEach { response ->
-                response.append(fromEvent)
-                +"- - - - -\n"
+        newSuspendedTransaction {
+            reply {
+                history.responses.forEach { response ->
+                    response.append(fromEvent)
+                    +"- - - - -\n"
+                }
             }
         }
     }
@@ -114,15 +113,21 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
     // edit
     @SubCommand
     suspend fun UserCommandSender.edit(responseId: Long) {
-        val response = Caches.getResponseOrNull(responseId) ?: return reply { +"未找到自动回复 #$responseId" }
-        Actions.schedule(this, EditAction(response))
+        newSuspendedTransaction {
+            response(responseId)?.let {
+                Actions.schedule(this@edit, EditAction(it))
+            }
+        }
     }
 
     // append
     @SubCommand
     suspend fun UserCommandSender.append(responseId: Long) {
-        val response = Caches.getResponseOrNull(responseId) ?: return reply { +"未找到自动回复 #$responseId" }
-        Actions.schedule(this, AppendAction(response))
+        newSuspendedTransaction {
+            response(responseId)?.let {
+                Actions.schedule(this@append, AppendAction(it))
+            }
+        }
     }
 
     // cancel
@@ -133,9 +138,13 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
     // delete
     @SubCommand
     suspend fun CommandSender.delete(responseId: Long) {
-        val response = Caches.getResponseOrNull(responseId) ?: return reply { +"未找到自动回复 #$responseId" }
-        Caches.deleteResponse(response)
-        reply { +"已删除自动回复 #$responseId" }
+        newSuspendedTransaction {
+            response(responseId)?.let {
+                it.deleted = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                it.flush()
+                reply { +"已删除自动回复 #$responseId" }
+            }
+        }
     }
 
     // link
@@ -145,34 +154,40 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
             "create" -> {
                 val (activeId, direction, passiveId) = Link.solve(argument)
                     ?: return reply { +"无法解析连接: $argument" }
-                val active = Caches.getResponseOrNull(activeId) ?: return reply { +"未找到自动回复 #$activeId" }
-                val passive = Caches.getResponseOrNull(passiveId) ?: return reply { +"未找到自动回复 #$passiveId" }
-                Caches.findLink(activeId, passiveId)?.let {
-                    return reply { +"两者之间已经存在连接: ${it.direction.connection}" }
+                newSuspendedTransaction {
+                    Link.find { (Links.active eq activeId) and (Links.passive eq passiveId) }
+                        .firstOrNull()
+                        ?.let {
+                            reply { +"两者之间已经存在连接: ${it.direction.connection}" }
+                            return@newSuspendedTransaction
+                        }
+                    val responseA = response(activeId) ?: return@newSuspendedTransaction
+                    val responseP = response(passiveId) ?: return@newSuspendedTransaction
+                    Link.new {
+                        this.active = responseA
+                        this.passive = responseP
+                        this.direction = direction
+                    }
+                    reply { +"已创建连接: #$activeId ${direction.connection} #$passiveId" }
                 }
-                Caches.newLink(active, passive, direction)
-                reply { +"已创建连接: #$activeId ${direction.connection} #$passiveId" }
             }
 
             "delete" -> {
                 val (activeId, direction, passiveId) = Link.solve(argument)
                     ?: return reply { +"无法解析连接: $argument" }
-                val link = Caches.findLink(activeId, passiveId, direction)
-                    ?: return reply { +"未找到对应的连接" }
-                Caches.deleteLink(link)
-                reply { +"已删除连接" }
+                newSuspendedTransaction {
+                    val link = Link.find {
+                        (Links.active eq activeId) and (Links.passive eq passiveId) and (Links.direction eq direction)
+                    }.firstOrNull() ?: return@newSuspendedTransaction reply { +"未找到对应的连接" }
+                    link.delete()
+                    reply { +"已删除连接" }
+                }
             }
 
             "list" -> {
-                val page = argument.toIntOrNull() ?: return reply { +"无效的页码, 请使用正整数 : $argument" }
-                val size = 10L
-                val pages = Caches.getLinks().maxPage(size)
-                if (page > pages) {
-                    return reply { +"未找到第 $page 页, 共 $pages 页" }
-                }
-                reply {
-                    +"第 $page 页, 共 $pages 页"
-                    Caches.getLinks().page(page, size) {
+                val page = argument.toIntOrNull() ?: return reply { +"无效的页码($argument), 请使用正整数" }
+                newSuspendedTransaction {
+                    Link.all().toList().onPage(page) {
                         +"#${it.active.id.value} ${it.direction.connection} #${it.passive.id.value}"
                     }
                 }
@@ -180,6 +195,15 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
 
             else -> reply { +"未知的操作: $action" }
         }
+    }
+
+    private suspend fun CommandSender.response(responseId: Long): Response? {
+        val response = Response.findById(responseId)
+        if (response == null) {
+            reply { +"未找到自动回复 #$responseId" }
+            return null
+        }
+        return response
     }
 
 }

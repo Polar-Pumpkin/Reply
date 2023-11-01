@@ -1,11 +1,13 @@
 package me.parrot.mirai.data.model
 
+import me.parrot.mirai.function.reply
 import me.parrot.mirai.storage.Responses
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.MessageChainBuilder
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 /**
  * Reply
@@ -16,7 +18,28 @@ import org.jetbrains.exposed.dao.id.EntityID
  * @since 2023/10/27 15:10
  */
 class Response(id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<Response>(Responses)
+    companion object : LongEntityClass<Response>(Responses) {
+
+        suspend fun isExclusive(event: MessageEvent): Boolean {
+            return newSuspendedTransaction {
+                val responses = all()
+                    .filter { it.trigger.test(event) }
+                    .toList()
+                if (responses.isNotEmpty()) {
+                    event.reply {
+                        +"此触发器已有 ${responses.size} 项自动回复:\n"
+                        responses.forEach {
+                            +"#${it.id.value} ${it.trigger}"
+                        }
+                    }
+                    false
+                } else {
+                    true
+                }
+            }
+        }
+
+    }
 
     var trigger by Responses.trigger
     var content by Responses.content

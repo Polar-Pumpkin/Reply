@@ -10,8 +10,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
-import kotlin.math.ceil
-import kotlin.math.roundToInt
 
 /**
  * Reply
@@ -39,7 +37,7 @@ fun ByteArray.decompress(): ByteArray {
     }
 }
 
-suspend fun MessageEvent.reply(block: suspend MessageChainBuilder.() -> Unit) {
+suspend inline fun MessageEvent.reply(block: MessageChainBuilder.() -> Unit) {
     subject.sendMessage(buildMessageChain {
         +message.quote()
         +" "
@@ -47,7 +45,7 @@ suspend fun MessageEvent.reply(block: suspend MessageChainBuilder.() -> Unit) {
     })
 }
 
-suspend fun CommandSender.reply(block: suspend MessageChainBuilder.() -> Unit) {
+suspend inline fun CommandSender.reply(block: MessageChainBuilder.() -> Unit) {
     sendMessage(buildMessageChain {
         user?.let {
             +At(it)
@@ -55,15 +53,4 @@ suspend fun CommandSender.reply(block: suspend MessageChainBuilder.() -> Unit) {
         }
         block()
     })
-}
-
-fun Collection<*>.maxPage(size: Long = 10): Int {
-    return ceil(this.size / size.toDouble()).roundToInt()
-}
-
-fun <E> Collection<E>.page(page: Int, size: Long = 10, action: (E) -> Unit) {
-    stream()
-        .skip((page - 1) * size)
-        .limit(size)
-        .forEach(action)
 }

@@ -1,6 +1,5 @@
 package me.parrot.mirai.manager
 
-import me.parrot.mirai.Reply
 import me.parrot.mirai.data.History
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -20,7 +19,7 @@ object Histories {
 
     operator fun set(userId: Long, history: History) {
         users[userId] = history
-        transaction(Reply.db) {
+        transaction {
             history.responses.forEach {
                 it.count++
                 it.flush()

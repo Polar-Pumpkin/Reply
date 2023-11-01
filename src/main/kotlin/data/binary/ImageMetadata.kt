@@ -9,7 +9,6 @@ import me.parrot.mirai.data.model.BinaryResource
 import me.parrot.mirai.function.base64
 import me.parrot.mirai.function.compress
 import me.parrot.mirai.function.decompress
-import me.parrot.mirai.manager.Caches
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.message.data.Image.Key.isUploaded
@@ -18,6 +17,8 @@ import net.mamoe.mirai.message.data.ImageType
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.ByteArrayInputStream
 import java.net.URL
 import java.util.function.Predicate
@@ -83,19 +84,21 @@ data class ImageMetadata(
         ).joinToString(" ")
 
         suspend fun find(image: Image): BinaryResource? {
-            val cache = cached[image.imageId]
-                ?.let { (_, meta) -> Predicate<ImageMetadata> { it.isSimilar(meta) } }
-                ?: Predicate<ImageMetadata> { it.isSameImage(image) }
-            Caches.getBinaries().values
-                .asSequence()
-                .filter { it.metadata is ImageMetadata }
-                .find { cache.test(it.metadata as ImageMetadata) }
-                ?.let { return it }
-            val (_, meta) = download(image)
-            return Caches.getBinaries().values
-                .asSequence()
-                .filter { it.metadata is ImageMetadata }
-                .find { (it.metadata as ImageMetadata).isSimilar(meta) }
+            return newSuspendedTransaction {
+                val cache = cached[image.imageId]
+                    ?.let { (_, meta) -> Predicate<ImageMetadata> { it.isSimilar(meta) } }
+                    ?: Predicate<ImageMetadata> { it.isSameImage(image) }
+                BinaryResource.all()
+                    .asSequence()
+                    .filter { it.metadata is ImageMetadata }
+                    .find { cache.test(it.metadata as ImageMetadata) }
+                    ?.let { return@newSuspendedTransaction it }
+                val (_, meta) = download(image)
+                BinaryResource.all()
+                    .asSequence()
+                    .filter { it.metadata is ImageMetadata }
+                    .find { (it.metadata as ImageMetadata).isSimilar(meta) }
+            }
         }
 
         suspend fun download(image: Image, cache: Boolean = true): Pair<ByteArray, ImageMetadata> {
@@ -124,7 +127,12 @@ data class ImageMetadata(
 
         suspend fun upload(image: Image): BinaryResource {
             val (bytes, meta) = download(image)
-            return Caches.newBinary(ExposedBlob(bytes), meta)
+            return transaction {
+                BinaryResource.new {
+                    value = ExposedBlob(bytes)
+                    metadata = meta
+                }
+            }
         }
 
         private fun of(image: Image, hash: String): ImageMetadata {

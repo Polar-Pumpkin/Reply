@@ -3,9 +3,9 @@ package me.parrot.mirai.data.content
 import kotlinx.serialization.Serializable
 import me.parrot.mirai.data.binary.ImageMetadata
 import me.parrot.mirai.data.model.BinaryResource
-import me.parrot.mirai.manager.Caches
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.MessageChainBuilder
+import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
  * Reply
@@ -19,7 +19,9 @@ import net.mamoe.mirai.message.data.MessageChainBuilder
 data class ImageContent(val binaryId: Long) : Content {
 
     private val resource: BinaryResource
-        get() = Caches.getBinary(binaryId)
+        get() = transaction {
+            requireNotNull(BinaryResource.findById(binaryId)) { "Invalid binary id: $binaryId" }
+        }
 
     context(MessageChainBuilder)
     override suspend fun append(origin: MessageEvent?) {

@@ -1,9 +1,9 @@
 package me.parrot.mirai.command.action
 
+import me.parrot.mirai.data.model.Response
 import me.parrot.mirai.data.trigger.ReplyTrigger
 import me.parrot.mirai.function.reply
 import me.parrot.mirai.manager.Actions
-import me.parrot.mirai.manager.Caches
 import me.parrot.mirai.registry.Triggers
 import net.mamoe.mirai.console.command.UserCommandSender
 import net.mamoe.mirai.event.events.MessageEvent
@@ -33,7 +33,7 @@ class DefineAction(val trigger: ReplyTrigger<*>?) : CommandAction {
     }
 
     override suspend fun run(event: MessageEvent) {
-        if (!Caches.excludeResponses(event)) {
+        if (!Response.isExclusive(event)) {
             return
         }
         val trigger = with(event) { Triggers.parse(event.message.content) }

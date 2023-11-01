@@ -1,14 +1,15 @@
 package me.parrot.mirai.command.action
 
 import me.parrot.mirai.data.content.Content
+import me.parrot.mirai.data.model.Response
 import me.parrot.mirai.data.trigger.ReplyTrigger
 import me.parrot.mirai.function.reply
 import me.parrot.mirai.manager.Actions
-import me.parrot.mirai.manager.Caches
 import me.parrot.mirai.registry.Triggers
 import net.mamoe.mirai.console.command.UserCommandSender
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
+import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
  * Reply
@@ -22,7 +23,6 @@ class CreateAction(val trigger: ReplyTrigger<out Message>?) : CommandAction {
 
     override suspend fun initialize(sender: UserCommandSender) {
         sender.reply { +"请发送触发器" }
-
     }
 
     override suspend fun initialize(event: MessageEvent) {
@@ -37,7 +37,7 @@ class CreateAction(val trigger: ReplyTrigger<out Message>?) : CommandAction {
     }
 
     private suspend fun createTrigger(event: MessageEvent) {
-        if (!Caches.excludeResponses(event)) {
+        if (!Response.isExclusive(event)) {
             return
         }
         val trigger = with(event) { Triggers.createDefault(message, message) }
@@ -47,7 +47,13 @@ class CreateAction(val trigger: ReplyTrigger<out Message>?) : CommandAction {
     private suspend fun createContent(event: MessageEvent) {
         trigger ?: return
         val content = Content.wrap(event.message, event.sender)
-        val response = Caches.newResponse(event.sender.id, trigger, content)
+        val response = transaction {
+            Response.new {
+                this.trigger = trigger
+                this.content = content
+                this.creator = event.sender.id
+            }
+        }
         event.reply { +"已创建自动回复 #${response.id.value}" }
     }
 

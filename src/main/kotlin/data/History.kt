@@ -1,5 +1,6 @@
 package me.parrot.mirai.data
 
+import me.parrot.mirai.data.model.Link
 import me.parrot.mirai.data.model.Response
 
 /**
@@ -12,4 +13,6 @@ import me.parrot.mirai.data.model.Response
  */
 class History(val responses: List<Response>) {
     constructor(vararg response: Response) : this(listOf(*response))
+
+    constructor(link: Link) : this(link.active, link.passive)
 }

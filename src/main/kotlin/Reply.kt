@@ -2,7 +2,6 @@ package me.parrot.mirai
 
 import me.parrot.mirai.command.ReplyCommand
 import me.parrot.mirai.listener.ReplyListener
-import me.parrot.mirai.manager.Caches
 import me.parrot.mirai.storage.Binaries
 import me.parrot.mirai.storage.Intervals
 import me.parrot.mirai.storage.Links
@@ -25,17 +24,13 @@ object Reply : KotlinPlugin(
     }
 ) {
 
-    lateinit var db: Database
-        private set
-
     override fun onEnable() {
         val file = File(dataFolder, "data")
-        db = Database.connect("jdbc:h2:${file.absolutePath}", "org.h2.Driver")
-        transaction(db) {
+        Database.connect("jdbc:h2:${file.absolutePath}", "org.h2.Driver")
+        transaction {
             SchemaUtils.create(Intervals, Binaries, Responses, Links)
         }
         logger.info { "已连接到数据库" }
-        Caches.build()
 
         ReplyListener.registerTo(globalEventChannel())
         CommandManager.registerCommand(ReplyCommand)
