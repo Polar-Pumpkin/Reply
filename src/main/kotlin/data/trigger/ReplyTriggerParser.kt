@@ -14,14 +14,16 @@ import net.mamoe.mirai.message.data.MessageChain
  * @version 1
  * @since 2023/10/30 10:25
  */
-interface ReplyTriggerParser<T : Message> : Unique<String> {
+interface ReplyTriggerParser<T : Message, E : ReplyTrigger<T>> : Unique<String> {
+
+    val clazz: Class<E>
 
     val arguments: Map<String, List<String>>
 
     context(MessageEvent)
-    suspend fun parse(demand: Demand): ReplyTrigger<T>
+    suspend fun parse(demand: Demand): E
 
     context(MessageEvent)
-    suspend fun createDefault(message: T, origin: MessageChain): ReplyTrigger<T>
+    suspend fun createDefault(message: T, origin: MessageChain): E
 
 }

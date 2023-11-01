@@ -14,7 +14,7 @@ import net.mamoe.mirai.message.data.*
  * @version 1
  * @since 2023/10/30 11:28
  */
-object Triggers : Registry<String, ReplyTriggerParser<*>>() {
+object Triggers : Registry<String, ReplyTriggerParser<*, *>>() {
 
     init {
         register(AtTrigger)

@@ -21,9 +21,11 @@ data class ChainTrigger(val triggers: List<ReplyTrigger<*>>) : ReplyTrigger<Mess
         return triggers.all { it.test(message) }
     }
 
-    companion object : ReplyTriggerParser<MessageChain> {
+    companion object : ReplyTriggerParser<MessageChain, ChainTrigger> {
 
         override val uniqueId: String = "chain"
+
+        override val clazz: Class<ChainTrigger> = ChainTrigger::class.java
 
         override val arguments: Map<String, List<String>> = mapOf(
             "triggers" to listOf("触发器列表")

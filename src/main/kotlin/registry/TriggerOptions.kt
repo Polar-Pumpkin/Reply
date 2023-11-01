@@ -2,10 +2,7 @@ package me.parrot.mirai.registry
 
 import me.parrot.mirai.data.Demand
 import me.parrot.mirai.data.trigger.ReplyTrigger
-import me.parrot.mirai.data.trigger.option.InstanceExclusiveOption
-import me.parrot.mirai.data.trigger.option.InstanceSingletonOption
-import me.parrot.mirai.data.trigger.option.TriggerOption
-import me.parrot.mirai.data.trigger.option.TriggerOptionParser
+import me.parrot.mirai.data.trigger.option.*
 import me.parrot.mirai.internal.container.Registry
 
 /**
@@ -21,6 +18,7 @@ object TriggerOptions : Registry<String, TriggerOptionParser>() {
     init {
         register(InstanceSingletonOption)
         register(InstanceExclusiveOption)
+        register(LimitGroupOption)
     }
 
     fun target(clazz: Class<out ReplyTrigger<*>>): List<TriggerOptionParser> =

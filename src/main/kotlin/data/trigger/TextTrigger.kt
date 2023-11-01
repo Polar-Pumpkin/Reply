@@ -34,9 +34,11 @@ data class TextTrigger(
         }
     }
 
-    companion object : ReplyTriggerParser<PlainText> {
+    companion object : ReplyTriggerParser<PlainText, TextTrigger> {
 
         override val uniqueId: String = "text"
+
+        override val clazz: Class<TextTrigger> = TextTrigger::class.java
 
         override val arguments: Map<String, List<String>> = mapOf(
             "text" to listOf("匹配内容"),

@@ -12,6 +12,8 @@ import me.parrot.mirai.function.reply
 import me.parrot.mirai.manager.Actions
 import me.parrot.mirai.manager.Caches
 import me.parrot.mirai.manager.Histories
+import me.parrot.mirai.registry.TriggerOptions
+import me.parrot.mirai.registry.Triggers
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CommandSenderOnMessage
 import net.mamoe.mirai.console.command.CompositeCommand
@@ -35,14 +37,44 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
         reply { +"重载完成" }
     }
 
+    // help
+    @SubCommand
+    suspend fun CommandSender.help(name: String? = null) {
+        if (name == null) {
+            reply {
+                +"已注册的触发器解析器:\n"
+                +Triggers.keys.joinToString(", ")
+            }
+        } else {
+            val parser = Triggers[name] ?: return reply { +"未知的触发器解析器: $name" }
+            val options = TriggerOptions.target(parser.clazz)
+            reply {
+                +"触发器解析器: ${parser.uniqueId}\n"
+                if (parser.arguments.isNotEmpty()) {
+                    +"位置参数:\n"
+                    parser.arguments.forEach { (name, description) ->
+                        +"$name:\n"
+                        +description.ifEmpty { listOf("(无介绍)") }.joinToString { "$it\n" }
+                    }
+                }
+                if (options.isNotEmpty()) {
+                    +"触发器选项:\n"
+                    options.forEach { option ->
+                        +"${option.uniqueId}:\n"
+                        +option.description.ifEmpty { listOf("(无介绍)") }.joinToString { "$it\n" }
+                    }
+                }
+            }
+        }
+    }
+
     // list
     @SubCommand
     suspend fun CommandSender.list(page: Int) {
         val size = 10L
         val pages = Caches.getResponses().values.maxPage(size)
         if (page > pages) {
-            reply { +"未找到第 $page 页, 共 $pages 页" }
-            return
+            return reply { +"未找到第 $page 页, 共 $pages 页" }
         }
         reply {
             +"第 $page 页 / 共 $pages 页\n"
@@ -136,8 +168,7 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
                 val size = 10L
                 val pages = Caches.getLinks().maxPage(size)
                 if (page > pages) {
-                    reply { +"未找到第 $page 页, 共 $pages 页" }
-                    return
+                    return reply { +"未找到第 $page 页, 共 $pages 页" }
                 }
                 reply {
                     +"第 $page 页, 共 $pages 页"

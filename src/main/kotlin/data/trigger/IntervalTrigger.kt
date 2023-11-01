@@ -29,9 +29,11 @@ data class IntervalTrigger(val days: Int) : ReplyTrigger<MessageSource>() {
         return duration.inWholeDays >= days
     }
 
-    companion object : ReplyTriggerParser<MessageSource> {
+    companion object : ReplyTriggerParser<MessageSource, IntervalTrigger> {
 
         override val uniqueId: String = "interval"
+
+        override val clazz: Class<IntervalTrigger> = IntervalTrigger::class.java
 
         override val arguments: Map<String, List<String>> = mapOf(
             "days" to listOf("发言间隔的天数")

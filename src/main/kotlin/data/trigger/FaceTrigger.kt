@@ -21,9 +21,11 @@ data class FaceTrigger(val faceId: Int) : ReplyTrigger<Face>() {
         return message.id == faceId
     }
 
-    companion object : ReplyTriggerParser<Face> {
+    companion object : ReplyTriggerParser<Face, FaceTrigger> {
 
         override val uniqueId: String = "face"
+
+        override val clazz: Class<FaceTrigger> = FaceTrigger::class.java
 
         override val arguments: Map<String, List<String>> = mapOf(
             "faceId" to listOf("黄豆表情 ID")

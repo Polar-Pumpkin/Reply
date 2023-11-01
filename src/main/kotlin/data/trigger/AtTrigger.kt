@@ -19,9 +19,11 @@ data class AtTrigger(val userId: Long) : ReplyTrigger<At>() {
 
     override suspend fun test(message: At): Boolean = message.target == userId
 
-    companion object : ReplyTriggerParser<At> {
+    companion object : ReplyTriggerParser<At, AtTrigger> {
 
         override val uniqueId: String = "at"
+
+        override val clazz: Class<AtTrigger> = AtTrigger::class.java
 
         override val arguments: Map<String, List<String>> = mapOf(
             "userId" to listOf("被提及用户 ID")

@@ -29,16 +29,18 @@ data class ImageTrigger(val binaryId: Long) : ReplyTrigger<Image>() {
         return (resource.metadata as? ImageMetadata)?.isSimilar(message) ?: return false
     }
 
-    companion object : ReplyTriggerParser<Image> {
+    companion object : ReplyTriggerParser<Image, ImageTrigger> {
 
         override val uniqueId: String = "image"
+
+        override val clazz: Class<ImageTrigger> = ImageTrigger::class.java
 
         override val arguments: Map<String, List<String>> = mapOf(
             "image" to listOf("图片")
         )
 
         context(MessageEvent)
-        override suspend fun parse(demand: Demand): ReplyTrigger<Image> {
+        override suspend fun parse(demand: Demand): ImageTrigger {
             val (code) = demand.positions
             val chain = code.deserializeMiraiCode(subject)
             val image: Image by chain
