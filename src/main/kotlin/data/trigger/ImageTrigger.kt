@@ -29,6 +29,9 @@ data class ImageTrigger(val binaryId: Long) : ReplyTrigger<Image>() {
             requireNotNull(BinaryResource.findById(binaryId)) { "Invalid binary id: $binaryId" }
         }
 
+    override val clazz: Class<Image>
+        get() = Image::class.java
+
     override suspend fun test(message: Image): Boolean {
         return (resource.metadata as? ImageMetadata)?.isSimilar(message) ?: return false
     }

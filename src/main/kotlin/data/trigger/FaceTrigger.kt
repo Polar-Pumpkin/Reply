@@ -19,6 +19,9 @@ import net.mamoe.mirai.message.data.MessageChain
 @Serializable
 data class FaceTrigger(val faceId: Int) : ReplyTrigger<Face>() {
 
+    override val clazz: Class<Face>
+        get() = Face::class.java
+
     override suspend fun test(message: Face): Boolean {
         return message.id == faceId
     }

@@ -49,7 +49,7 @@ class CreateAction(val trigger: ReplyTrigger<out Message>?) : CommandAction {
         val content = Content.wrap(event.message, event.sender)
         val response = transaction {
             Response.new {
-                this.trigger = trigger
+                this.trigger = this@CreateAction.trigger
                 this.content = content
                 this.creator = event.sender.id
             }

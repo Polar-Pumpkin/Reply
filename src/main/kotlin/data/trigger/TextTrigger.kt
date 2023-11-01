@@ -23,6 +23,9 @@ data class TextTrigger(
     val ignoreCase: Boolean = false
 ) : ReplyTrigger<PlainText>() {
 
+    override val clazz: Class<PlainText>
+        get() = PlainText::class.java
+
     override suspend fun test(message: PlainText): Boolean {
         val content = message.content.trim()
         return when (mode) {

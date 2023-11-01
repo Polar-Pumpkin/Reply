@@ -19,6 +19,9 @@ import net.mamoe.mirai.message.data.MessageChain
 @Serializable
 data class AtTrigger(val userId: Long) : ReplyTrigger<At>() {
 
+    override val clazz: Class<At>
+        get() = At::class.java
+
     override suspend fun test(message: At): Boolean = message.target == userId
 
     companion object : ReplyTriggerParser<At, AtTrigger> {

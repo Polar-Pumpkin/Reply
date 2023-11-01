@@ -24,6 +24,9 @@ data class ChainTrigger(val triggers: List<ReplyTrigger<*>>) : ReplyTrigger<Mess
         check(triggers.isNotEmpty()) { "ChainTrigger cannot to be empty" }
     }
 
+    override val clazz: Class<MessageChain>
+        get() = MessageChain::class.java
+
     override suspend fun test(message: MessageChain): Boolean {
         return triggers.all { it.test(message) }
     }

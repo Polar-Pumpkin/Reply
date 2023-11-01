@@ -26,6 +26,8 @@ sealed class ReplyTrigger<T : Message> {
 
     private val options: MutableMap<String, TriggerOption> = mutableMapOf()
 
+    abstract val clazz: Class<T>
+
     abstract suspend fun test(message: T): Boolean
 
     open suspend fun test(message: MessageChain): Boolean {
@@ -58,7 +60,12 @@ sealed class ReplyTrigger<T : Message> {
     }
 
     @Suppress("UNCHECKED_CAST")
-    open fun cast(message: Message): T? = message as? T
+    open fun cast(message: Message): T? {
+        if (clazz.isInstance(message)) {
+            return message as T
+        }
+        return null
+    }
 
     fun addOption(option: TriggerOption, optionId: String = optionId(option::class.java)) {
         options[optionId] = option
