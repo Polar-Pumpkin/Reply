@@ -8,10 +8,15 @@ import me.parrot.mirai.algorithm.DHash
 import me.parrot.mirai.data.model.BinaryResource
 import me.parrot.mirai.function.base64
 import me.parrot.mirai.function.compress
+import me.parrot.mirai.function.decompress
 import me.parrot.mirai.manager.Caches
+import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.data.Image
+import net.mamoe.mirai.message.data.Image.Key.isUploaded
 import net.mamoe.mirai.message.data.Image.Key.queryUrl
 import net.mamoe.mirai.message.data.ImageType
+import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
+import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import java.io.ByteArrayInputStream
 import java.net.URL
@@ -39,6 +44,16 @@ data class ImageMetadata(
     val hash: String
 ) : BinaryMetadata {
 
+    fun image(): Image {
+        return Image.newBuilder(imageId).also {
+            it.type = imageType
+            it.size = size
+            it.width = width
+            it.height = height
+            it.isEmoji = isEmoji
+        }.build()
+    }
+
     fun isSameImage(image: Image): Boolean {
         return image.imageId == imageId || base64(image.md5) == md5
     }
@@ -49,6 +64,11 @@ data class ImageMetadata(
 
     suspend fun isSimilar(image: Image): Boolean {
         return isSameImage(image) || isSimilar(download(image).second)
+    }
+
+    suspend fun build(blob: ExposedBlob, contact: Contact): Image {
+        val resource = blob.bytes.decompress().toExternalResource(imageId)
+        return image().takeIf { it.isUploaded(contact.bot) } ?: resource.uploadAsImage(contact)
     }
 
     companion object {

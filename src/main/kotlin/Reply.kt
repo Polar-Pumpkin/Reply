@@ -1,8 +1,14 @@
 package me.parrot.mirai
 
+import me.parrot.mirai.command.ReplyCommand
+import me.parrot.mirai.listener.ReplyListener
+import me.parrot.mirai.manager.Caches
 import me.parrot.mirai.storage.Binaries
+import net.mamoe.mirai.console.command.CommandManager
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.event.globalEventChannel
+import net.mamoe.mirai.event.registerTo
 import net.mamoe.mirai.utils.info
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -26,6 +32,10 @@ object Reply : KotlinPlugin(
             SchemaUtils.create(Binaries)
         }
         logger.info { "已连接到数据库" }
+        Caches.build()
+
+        ReplyListener.registerTo(globalEventChannel())
+        CommandManager.registerCommand(ReplyCommand)
     }
 
 }

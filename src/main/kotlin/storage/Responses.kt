@@ -22,4 +22,5 @@ object Responses : LongIdTable("response") {
     val creator = long("creator")
     val created = datetime("created").defaultExpression(CurrentDateTime)
     val deleted = datetime("deleted").nullable()
+    val count = long("count").default(0)
 }

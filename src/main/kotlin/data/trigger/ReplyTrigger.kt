@@ -3,8 +3,10 @@ package me.parrot.mirai.data.trigger
 import kotlinx.serialization.Serializable
 import me.parrot.mirai.data.trigger.option.InstanceExclusiveOption
 import me.parrot.mirai.data.trigger.option.InstanceSingletonOption
+import me.parrot.mirai.data.trigger.option.LimitGroupOption
 import me.parrot.mirai.data.trigger.option.TriggerOption
 import me.parrot.mirai.function.optionId
+import net.mamoe.mirai.event.events.GroupAwareMessageEvent
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.MessageChain
@@ -45,6 +47,13 @@ sealed class ReplyTrigger<T : Message> {
     }
 
     open suspend fun test(event: MessageEvent): Boolean {
+        if (event is GroupAwareMessageEvent) {
+            option<LimitGroupOption> {
+                if (event.group.id !in it.groups) {
+                    return false
+                }
+            }
+        }
         return test(event.message)
     }
 
@@ -61,6 +70,7 @@ sealed class ReplyTrigger<T : Message> {
 
     fun getOptionOrNull(optionId: String): TriggerOption? = options[optionId]
 
+    @JvmName("getOptionOrNullWithType")
     inline fun <reified T : TriggerOption> getOptionOrNull(optionId: String = optionId<T>()): T? =
         getOptionOrNull(optionId) as T?
 
