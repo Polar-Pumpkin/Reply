@@ -1,5 +1,6 @@
 package me.parrot.mirai.data.trigger
 
+import kotlinx.serialization.Serializable
 import me.parrot.mirai.data.Demand
 import me.parrot.mirai.storage.Intervals
 import net.mamoe.mirai.event.events.GroupAwareMessageEvent
@@ -15,6 +16,7 @@ import net.mamoe.mirai.message.data.MessageSource
  * @version 1
  * @since 2023/10/30 14:56
  */
+@Serializable
 data class IntervalTrigger(val days: Int) : ReplyTrigger<MessageSource>() {
 
     override suspend fun test(message: MessageSource): Boolean {
@@ -46,7 +48,7 @@ data class IntervalTrigger(val days: Int) : ReplyTrigger<MessageSource>() {
         }
 
         context(MessageEvent)
-        override suspend fun createDefault(message: MessageSource, origin: MessageChain): IntervalTrigger {
+        override suspend fun createDefault(message: MessageSource, origin: MessageChain?): IntervalTrigger {
             TODO("Not yet implemented")
         }
 

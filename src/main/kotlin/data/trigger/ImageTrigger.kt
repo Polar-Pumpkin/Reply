@@ -1,5 +1,6 @@
 package me.parrot.mirai.data.trigger
 
+import kotlinx.serialization.Serializable
 import me.parrot.mirai.data.Demand
 import me.parrot.mirai.data.binary.ImageMetadata
 import me.parrot.mirai.data.model.BinaryResource
@@ -20,6 +21,7 @@ import net.mamoe.mirai.message.data.getValue
  * @version 1
  * @since 2023/10/30 13:09
  */
+@Serializable
 data class ImageTrigger(val binaryId: Long) : ReplyTrigger<Image>() {
 
     private val resource: BinaryResource
@@ -49,9 +51,9 @@ data class ImageTrigger(val binaryId: Long) : ReplyTrigger<Image>() {
         }
 
         context(MessageEvent)
-        override suspend fun createDefault(message: Image, origin: MessageChain): ImageTrigger {
+        override suspend fun createDefault(message: Image, origin: MessageChain?): ImageTrigger {
             return of(message)
-                .createDefaultOptions(message, origin)
+                .createDefaultOptions(origin)
         }
 
         private suspend fun of(image: Image): ImageTrigger {

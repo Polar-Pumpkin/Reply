@@ -1,5 +1,6 @@
 package me.parrot.mirai.data.trigger
 
+import kotlinx.serialization.Serializable
 import me.parrot.mirai.data.Demand
 import me.parrot.mirai.internal.function.createDefaultOptions
 import me.parrot.mirai.internal.function.parseOptions
@@ -15,6 +16,7 @@ import net.mamoe.mirai.message.data.MessageChain
  * @version 1
  * @since 2023/10/30 13:00
  */
+@Serializable
 data class AtTrigger(val userId: Long) : ReplyTrigger<At>() {
 
     override suspend fun test(message: At): Boolean = message.target == userId
@@ -37,9 +39,9 @@ data class AtTrigger(val userId: Long) : ReplyTrigger<At>() {
         }
 
         context(MessageEvent)
-        override suspend fun createDefault(message: At, origin: MessageChain): AtTrigger {
+        override suspend fun createDefault(message: At, origin: MessageChain?): AtTrigger {
             return AtTrigger(message.target)
-                .createDefaultOptions(message, origin)
+                .createDefaultOptions(origin)
         }
 
     }

@@ -24,6 +24,6 @@ interface ReplyTriggerParser<T : Message, E : ReplyTrigger<T>> : Unique<String> 
     suspend fun parse(demand: Demand): E
 
     context(MessageEvent)
-    suspend fun createDefault(message: T, origin: MessageChain): E
+    suspend fun createDefault(message: T, origin: MessageChain? = null): E
 
 }

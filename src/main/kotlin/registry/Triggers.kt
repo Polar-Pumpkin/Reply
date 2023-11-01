@@ -38,16 +38,25 @@ object Triggers : Registry<String, ReplyTriggerParser<*, *>>() {
     }
 
     context(MessageEvent)
-    @Suppress("UNCHECKED_CAST")
-    suspend fun <T : Message> createDefault(message: T, origin: MessageChain): ReplyTrigger<T> {
-        return when (message) {
+    suspend fun createDefault(message: Message, origin: MessageChain? = null): ReplyTrigger<out Message> {
+        val trigger = when (message) {
             is At -> AtTrigger.createDefault(message, origin)
             is Face -> FaceTrigger.createDefault(message, origin)
             is Image -> ImageTrigger.createDefault(message, origin)
             is PlainText -> TextTrigger.createDefault(message, origin)
             is MessageChain -> ChainTrigger.createDefault(message, origin)
             else -> throw IllegalArgumentException("Unsupported message type: ${message::class.java.canonicalName}")
-        } as ReplyTrigger<T>
+        }
+
+        return if (trigger is ChainTrigger) {
+            if (trigger.triggers.size == 1) {
+                trigger.triggers.first()
+            } else {
+                trigger
+            }
+        } else {
+            trigger
+        }
     }
 
 }

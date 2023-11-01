@@ -1,5 +1,6 @@
 package me.parrot.mirai.data.trigger
 
+import kotlinx.serialization.Serializable
 import me.parrot.mirai.data.Demand
 import me.parrot.mirai.internal.function.createDefaultOptions
 import me.parrot.mirai.internal.function.parseOptions
@@ -15,6 +16,7 @@ import net.mamoe.mirai.message.data.MessageChain
  * @version 1
  * @since 2023/10/30 15:37
  */
+@Serializable
 data class FaceTrigger(val faceId: Int) : ReplyTrigger<Face>() {
 
     override suspend fun test(message: Face): Boolean {
@@ -39,9 +41,9 @@ data class FaceTrigger(val faceId: Int) : ReplyTrigger<Face>() {
         }
 
         context(MessageEvent)
-        override suspend fun createDefault(message: Face, origin: MessageChain): FaceTrigger {
+        override suspend fun createDefault(message: Face, origin: MessageChain?): FaceTrigger {
             return FaceTrigger(message.id)
-                .createDefaultOptions(message, origin)
+                .createDefaultOptions(origin)
         }
 
     }

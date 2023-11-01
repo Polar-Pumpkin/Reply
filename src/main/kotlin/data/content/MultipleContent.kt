@@ -1,5 +1,6 @@
 package me.parrot.mirai.data.content
 
+import kotlinx.serialization.Serializable
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.MessageChainBuilder
 
@@ -11,6 +12,7 @@ import net.mamoe.mirai.message.data.MessageChainBuilder
  * @version 1
  * @since 2023/11/01 11:28
  */
+@Serializable
 data class MultipleContent(val contents: MutableSet<Content>) : Content {
 
     context(MessageChainBuilder)

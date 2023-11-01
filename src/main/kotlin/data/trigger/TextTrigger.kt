@@ -54,9 +54,9 @@ data class TextTrigger(
         }
 
         context(MessageEvent)
-        override suspend fun createDefault(message: PlainText, origin: MessageChain): TextTrigger {
+        override suspend fun createDefault(message: PlainText, origin: MessageChain?): TextTrigger {
             return TextTrigger(message.content)
-                .createDefaultOptions(message, origin)
+                .createDefaultOptions(origin)
         }
 
     }
