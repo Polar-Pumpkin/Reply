@@ -36,7 +36,7 @@ object ReplyListener : SimpleListenerHost() {
                 event.reply {
                     +"执行操作时遇到错误:\n"
                     +"${cause::class.java.canonicalName}\n"
-                    +"- - - - -"
+                    +"- - - - -\n"
                     +(cause.message ?: "null")
                 }
             }
@@ -55,6 +55,7 @@ object ReplyListener : SimpleListenerHost() {
             .filter { it.trigger.test(this) }
             .associateBy { it.id.value }
             .toMutableMap()
+            .takeIf { it.isNotEmpty() } ?: return
         val links = CopyOnWriteArrayList(Caches.collectLinks(responses.keys))
         links.forEach {
             when (it.direction) {
