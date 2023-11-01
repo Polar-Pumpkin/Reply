@@ -13,6 +13,7 @@ import me.parrot.mirai.data.trigger.ReplyTrigger
 import me.parrot.mirai.function.reply
 import me.parrot.mirai.storage.Responses
 import net.mamoe.mirai.event.events.MessageEvent
+import net.mamoe.mirai.message.data.Message
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -73,7 +74,7 @@ object Caches {
 
     fun getResponseOrNull(responseId: Long): Response? = responses[responseId]
 
-    fun newResponse(creatorId: Long, trigger: ReplyTrigger<*>, content: Content): Response {
+    fun newResponse(creatorId: Long, trigger: ReplyTrigger<out Message>, content: Content): Response {
         return transaction(Reply.db) {
             Response.new {
                 this.trigger = trigger

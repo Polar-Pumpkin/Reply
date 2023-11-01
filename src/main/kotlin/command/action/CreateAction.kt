@@ -8,6 +8,7 @@ import me.parrot.mirai.manager.Caches
 import me.parrot.mirai.registry.Triggers
 import net.mamoe.mirai.console.command.UserCommandSender
 import net.mamoe.mirai.event.events.MessageEvent
+import net.mamoe.mirai.message.data.Message
 
 /**
  * Reply
@@ -17,7 +18,7 @@ import net.mamoe.mirai.event.events.MessageEvent
  * @version 1
  * @since 2023/11/01 10:39
  */
-class CreateAction(val trigger: ReplyTrigger<*>?) : CommandAction {
+class CreateAction(val trigger: ReplyTrigger<out Message>?) : CommandAction {
 
     override suspend fun initialize(sender: UserCommandSender) {
         sender.reply { +"请发送触发器" }
