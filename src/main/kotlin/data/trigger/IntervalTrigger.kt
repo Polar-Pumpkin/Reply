@@ -46,7 +46,7 @@ data class IntervalTrigger(val days: Int) : ReplyTrigger<MessageSource>() {
 
         context(MessageEvent)
         override suspend fun parse(demand: Demand): IntervalTrigger {
-            val (days) = demand.positions
+            val days = demand.argument("days", 0)
             return IntervalTrigger(days.toInt())
         }
 

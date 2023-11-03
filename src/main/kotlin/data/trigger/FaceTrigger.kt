@@ -38,7 +38,7 @@ data class FaceTrigger(val faceId: Int) : ReplyTrigger<Face>() {
 
         context(MessageEvent)
         override suspend fun parse(demand: Demand): FaceTrigger {
-            val (faceId) = demand.positions
+            val faceId = demand.argument("faceId", 0)
             return FaceTrigger(faceId.toInt())
                 .parseOptions(demand)
         }

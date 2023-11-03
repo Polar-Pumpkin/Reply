@@ -51,8 +51,10 @@ data class TextTrigger(
 
         context(MessageEvent)
         override suspend fun parse(demand: Demand): TextTrigger {
-            val (text, mode, ignoreCase) = demand.positions
-            return TextTrigger(text, Mode.valueOf(mode.uppercase()), ignoreCase.toBooleanStrict())
+            val text = demand.argument("text", 0)
+            val mode = demand.argument("mode", 1, Mode.EQUAL.name)
+            val ignoreCase = demand.flag("ignoreCase", 2, false)
+            return TextTrigger(text, Mode.valueOf(mode.uppercase()), ignoreCase)
                 .parseOptions(demand)
         }
 

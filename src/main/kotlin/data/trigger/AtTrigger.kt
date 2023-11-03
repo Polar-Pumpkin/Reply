@@ -36,7 +36,7 @@ data class AtTrigger(val userId: Long) : ReplyTrigger<At>() {
 
         context(MessageEvent)
         override suspend fun parse(demand: Demand): AtTrigger {
-            val (userId) = demand.positions
+            val userId = demand.argument("userId", 0)
             return AtTrigger(userId.toLong())
                 .parseOptions(demand)
         }

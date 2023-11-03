@@ -14,6 +14,30 @@ data class Demand(
     val arguments: Map<String, String> = emptyMap(),
     val flags: Set<String> = emptySet()
 ) {
+
+    fun argumentOrNull(name: String, index: Int = -1, defaultValue: String? = null): String? {
+        arguments[name]?.let {
+            return it
+        }
+        if (name in flags) {
+            return "true"
+        }
+        if (index >= 0) {
+            positions.elementAtOrNull(index)?.let {
+                return it
+            }
+        }
+        return defaultValue
+    }
+
+    fun argument(name: String, index: Int = -1, defaultValue: String? = null): String {
+        return checkNotNull(argumentOrNull(name, index, defaultValue)) { "'$name'($index) is required" }
+    }
+
+    fun flag(name: String, index: Int = -1, defaultValue: Boolean = false): Boolean {
+        return argumentOrNull(name, index, "false")?.toBooleanStrict() ?: return defaultValue
+    }
+
     companion object {
         fun read(define: String): Demand {
             val namespace = StringBuilder()

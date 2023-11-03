@@ -54,14 +54,14 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
                     +"位置参数:\n"
                     parser.arguments.forEach { (name, description) ->
                         +"$name:\n"
-                        +description.ifEmpty { listOf("(无介绍)") }.joinToString { "$it\n" }
+                        description.ifEmpty { listOf("(无介绍)") }.forEach { +"$it\n" }
                     }
                 }
                 if (options.isNotEmpty()) {
                     +"触发器选项:\n"
                     options.forEach { option ->
                         +"${option.uniqueId}:\n"
-                        +option.description.ifEmpty { listOf("(无介绍)") }.joinToString { "$it\n" }
+                        option.description.ifEmpty { listOf("(无介绍)") }.forEach { +"$it\n" }
                     }
                 }
             }
@@ -104,7 +104,7 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
             reply {
                 history.responses.forEach { response ->
                     response.append(fromEvent)
-                    +"- - - - -\n"
+                    +"\n- - - - -\n"
                 }
             }
         }

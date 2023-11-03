@@ -48,7 +48,7 @@ data class ImageTrigger(val binaryId: Long) : ReplyTrigger<Image>() {
 
         context(MessageEvent)
         override suspend fun parse(demand: Demand): ImageTrigger {
-            val (code) = demand.positions
+            val code = demand.argument("code", 0)
             val chain = code.deserializeMiraiCode(subject)
             val image: Image by chain
             return of(image)
