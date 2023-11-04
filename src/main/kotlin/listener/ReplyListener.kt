@@ -8,6 +8,10 @@ import me.parrot.mirai.data.model.Response
 import me.parrot.mirai.function.reply
 import me.parrot.mirai.manager.Actions
 import me.parrot.mirai.manager.Histories
+import me.parrot.mirai.storage.Responses
+import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
+import net.mamoe.mirai.console.permission.PermissionService
+import net.mamoe.mirai.console.permission.PermissionService.Companion.hasPermission
 import net.mamoe.mirai.event.EventHandler
 import net.mamoe.mirai.event.EventPriority
 import net.mamoe.mirai.event.SimpleListenerHost
@@ -26,6 +30,13 @@ import kotlin.coroutines.CoroutineContext
  * @since 2023/10/30 16:26
  */
 object ReplyListener : SimpleListenerHost() {
+
+    private val permission by lazy {
+        PermissionService.INSTANCE.register(
+            Reply.permissionId("use"),
+            "Allow to activate auto-reply"
+        )
+    }
 
     override fun handleException(context: CoroutineContext, exception: Throwable) {
         val cause = exception.rootCause
@@ -50,9 +61,13 @@ object ReplyListener : SimpleListenerHost() {
         if (scheduled != null) {
             return scheduled.run(this)
         }
+        if (!toCommandSender().hasPermission(permission)) {
+            return
+        }
 
         newSuspendedTransaction {
-            val responses = Response.all()
+            val responses = Response
+                .find { Responses.deleted.isNull() }
                 .filter { it.trigger.test(this@onMessage) }
                 .associateBy { it.id.value }
                 .toMutableMap()
