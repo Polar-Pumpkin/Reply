@@ -19,6 +19,9 @@ import net.mamoe.mirai.message.data.MessageSource
 @Serializable
 data class IntervalTrigger(val days: Int) : ReplyTrigger<MessageSource>() {
 
+    override val isVirtual: Boolean
+        get() = true
+
     override val clazz: Class<MessageSource>
         get() = TODO("Not yet implemented")
 

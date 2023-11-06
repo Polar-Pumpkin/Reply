@@ -26,6 +26,9 @@ sealed class ReplyTrigger<T : Message> {
 
     private val options: MutableMap<String, TriggerOption> = mutableMapOf()
 
+    open val isVirtual: Boolean
+        get() = false
+
     abstract val clazz: Class<T>
 
     abstract suspend fun test(message: T): Boolean

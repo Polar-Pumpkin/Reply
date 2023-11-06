@@ -22,8 +22,8 @@ class Response(id: EntityID<Long>) : LongEntity(id) {
 
         suspend fun isExclusive(event: MessageEvent): Boolean {
             return newSuspendedTransaction {
-                val responses = all()
-                    .filter { it.trigger.test(event) }
+                val responses = find { Responses.deleted.isNull() }
+                    .filter { !it.trigger.isVirtual && it.trigger.test(event) }
                     .toList()
                 if (responses.isNotEmpty()) {
                     event.reply {
