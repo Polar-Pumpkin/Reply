@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "me.parrot.mirai"
-version = "2.0.0"
+version = "2.1.0"
 
 mirai {
     jvmTarget = JavaVersion.VERSION_1_8
@@ -28,8 +28,7 @@ dependencies {
 
     implementation("org.apache.commons:commons-lang3:3.13.0")
     implementation("com.google.guava:guava:32.1.3-jre")
-    implementation("com.h2database:h2:2.2.224")
-}
+    implementation("com.h2database:h2:2.2.224")}
 
 tasks {
     compileKotlin {

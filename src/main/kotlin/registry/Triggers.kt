@@ -22,6 +22,8 @@ object Triggers : Registry<String, ReplyTriggerParser<*, *>>() {
         register(TextTrigger)
         register(ImageTrigger)
         register(IntervalTrigger)
+        register(SenderTrigger)
+        register(RandomTrigger)
     }
 
     context(MessageEvent)

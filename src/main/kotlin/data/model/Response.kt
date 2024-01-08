@@ -51,9 +51,9 @@ class Response(id: EntityID<Long>) : LongEntity(id) {
     context(MessageChainBuilder)
     suspend fun append(origin: MessageEvent? = null) {
         +"#${id.value}\n"
-        +"触发器 (累计触发 $count 次):\n"
+        +"【触发器 (累计触发 $count 次)】\n"
         +"$trigger\n"
-        +"回复内容:\n"
+        +"【回复内容】\n"
         content.append(origin)
     }
 

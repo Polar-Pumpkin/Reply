@@ -17,6 +17,7 @@ import me.parrot.mirai.manager.Histories
 import me.parrot.mirai.registry.TriggerOptions
 import me.parrot.mirai.registry.Triggers
 import me.parrot.mirai.storage.Links
+import me.parrot.mirai.storage.Responses
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CommandSenderOnMessage
 import net.mamoe.mirai.console.command.CompositeCommand
@@ -51,14 +52,14 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
             reply {
                 +"触发器解析器: ${parser.uniqueId}\n"
                 if (parser.arguments.isNotEmpty()) {
-                    +"位置参数:\n"
+                    +"== 位置参数 ==\n"
                     parser.arguments.forEach { (name, description) ->
-                        +"$name:\n"
+                        +"【$name】\n"
                         description.ifEmpty { listOf("(无介绍)") }.forEach { +"$it\n" }
                     }
                 }
                 if (options.isNotEmpty()) {
-                    +"触发器选项:\n"
+                    +"== 触发器选项 ==\n"
                     options.forEach { option ->
                         +"${option.uniqueId}:\n"
                         option.description.ifEmpty { listOf("(无介绍)") }.forEach { +"$it\n" }
@@ -72,9 +73,10 @@ object ReplyCommand : CompositeCommand(Reply, "reply") {
     @SubCommand
     suspend fun CommandSender.list(page: Int, size: Long = 10) {
         newSuspendedTransaction {
-            Response.all().toList().onPage(page, size) {
-                +"#${it.id.value} ${it.trigger}\n"
-            }
+            Response
+                .find { Responses.deleted.isNull() }
+                .toList()
+                .onPage(page, size) { +"#${it.id.value} ${it.trigger}\n" }
         }
     }
 
